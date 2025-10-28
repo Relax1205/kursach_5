@@ -34,6 +34,7 @@
                 <th>Категория</th>
                 <th>Описание</th>
                 <th>Сумма</th>
+                <th>Действия</th>  <!-- Новая колонка -->
             </tr>
         </thead>
         <tbody>
@@ -48,6 +49,14 @@
                         {% else %}
                             <span class="text-danger">-{{ t.amount }}</span>
                         {% endif %}
+                    </td>
+                    <td>
+                        <!-- Кнопка удаления -->
+                        <a href="{% url 'transaction_delete' pk=t.pk %}" 
+                           class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Вы уверены, что хотите удалить эту транзакцию?');">
+                            Удалить
+                        </a>
                     </td>
                 </tr>
             {% endfor %}

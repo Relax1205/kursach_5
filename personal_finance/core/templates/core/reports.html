@@ -1,0 +1,17 @@
+<!-- core/templates/core/reports.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<h2>Финансовые отчёты</h2>
+<div class="alert alert-info">
+    <strong>В разработке</strong><br>
+    Здесь будут отображаться:
+    <ul>
+        <li>Диаграммы расходов по категориям</li>
+        <li>Сравнение фактических трат с бюджетом</li>
+        <li>Доходы и расходы по месяцам</li>
+    </ul>
+</div>
+
+<a href="{% url 'transaction_list' %}" class="btn btn-secondary">← Назад к транзакциям</a>
+{% endblock %}

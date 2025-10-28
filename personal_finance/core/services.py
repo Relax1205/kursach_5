@@ -5,7 +5,9 @@
 """
 
 import csv
+from decimal import Decimal
 from datetime import date
+from django.core.exceptions import ValidationError
 from django.db.models import Sum, Q
 from .models import Transaction, Category, Budget
 
@@ -150,3 +152,69 @@ def get_budget_vs_actual(user, year, month):
         })
 
     return result
+
+def import_transactions_from_csv(file, user):
+    """
+    Импортирует транзакции из CSV-файла.
+    Ожидаемый формат: Дата,Тип,Категория,Сумма,Описание
+    """
+    import csv
+    from io import StringIO
+    from decimal import Decimal
+    from datetime import date
+
+    # Декодируем файл
+    content = file.read().decode('utf-8')
+    reader = csv.reader(StringIO(content))
+    
+    # Пропускаем заголовок
+    try:
+        next(reader)
+    except StopIteration:
+        raise ValidationError("Пустой CSV-файл")
+
+    count = 0
+    for row in reader:
+        # Пропускаем пустые строки
+        if not row or all(cell.strip() == '' for cell in row):
+            continue
+            
+        # Убедимся, что есть минимум 4 поля
+        if len(row) < 4:
+            continue
+
+        date_str = row[0].strip()
+        type_str = row[1].strip()
+        category_name = row[2].strip()
+        amount_str = row[3].strip()
+        description = row[4].strip() if len(row) > 4 else ''
+
+        if not date_str or not type_str or not category_name or not amount_str:
+            continue
+
+        # Определяем тип
+        if type_str == 'Доход':
+            cat_type = Category.INCOME
+        elif type_str == 'Расход':
+            cat_type = Category.EXPENSE
+        else:
+            raise ValidationError(f'Неизвестный тип операции: {type_str}')
+
+        # Создаём/получаем категорию
+        category, created = Category.objects.get_or_create(
+            name=category_name,
+            type=cat_type,
+            user=user
+        )
+
+        # Создаём транзакцию
+        Transaction.objects.create(
+            user=user,
+            category=category,
+            amount=Decimal(amount_str),
+            description=description,
+            date=date.fromisoformat(date_str)
+        )
+        count += 1
+
+    return count

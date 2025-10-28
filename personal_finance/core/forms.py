@@ -2,28 +2,28 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Transaction, Category, Budget
+from django.core.exceptions import ValidationError 
 from django.utils import timezone
 from datetime import date
 
 
 class TransactionForm(forms.ModelForm):
-    """Форма для создания/редактирования транзакции."""
     class Meta:
         model = Transaction
         fields = ['amount', 'category', 'description', 'date']
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'description': forms.TextInput(attrs={'class': 'form-control'}),
-            'category': forms.Select(attrs={'class': 'form-control'}),
-        }
+        widgets = { ... }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')  # Передаём текущего пользователя
+        user = kwargs.pop('user')
         super().__init__(*args, **kwargs)
-        # Показываем только категории текущего пользователя
         self.fields['category'].queryset = Category.objects.filter(user=user)
 
+    # ДОБАВЬТЕ ЭТОТ МЕТОД
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount <= 0:
+            raise ValidationError('Сумма должна быть положительной.')
+        return amount
 
 class CategoryForm(forms.ModelForm):
     """Форма для создания категории."""

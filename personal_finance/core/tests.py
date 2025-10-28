@@ -12,7 +12,7 @@ from datetime import date
 from decimal import Decimal
 from .models import Transaction, Category, Budget
 from .forms import TransactionForm, CategoryForm, BudgetForm
-from .services import get_monthly_summary, get_expense_breakdown_by_category, export_transactions_to_csv
+from .services import get_monthly_summary, get_expense_breakdown_by_category, export_transactions_to_csv, import_transactions_from_csv
 from io import StringIO
 import csv
 
@@ -63,7 +63,7 @@ class TransactionModelTest(UserModelMixin, TestCase):
             date=date.today()
         )
         self.assertEqual(transaction.amount, Decimal('150.75'))
-        self.assertEqual(str(transaction), f'Продукты — 150.75 ({date.today()})')
+        self.assertEqual(str(transaction), f'Продукты (Расход) — 150.75 ({date.today()})')
 
 
 class BudgetModelTest(UserModelMixin, TestCase):
@@ -86,7 +86,7 @@ class BudgetModelTest(UserModelMixin, TestCase):
             month=budget_date
         )
         self.assertEqual(budget.month, budget_date)
-        self.assertEqual(str(budget), 'Транспорт — 5000.00 (2025-10)')
+        self.assertEqual(str(budget), 'Транспорт (Расход) — 5000.00 (2025-10)')
 
 
 class FormsTest(UserModelMixin, TestCase):
@@ -161,6 +161,26 @@ class ServicesTest(UserModelMixin, TestCase):
         rows = list(reader)
         self.assertEqual(len(rows), 4)  # заголовок + 3 транзакции
         self.assertIn('Еда', rows[1][2])  # категория в третьем столбце
+    
+    def test_import_csv(self):
+        # Удалим все существующие транзакции этого пользователя
+        Transaction.objects.filter(user=self.user).delete()
+        
+        csv_data = (
+            "Дата,Тип,Категория,Сумма,Описание\n"
+            "2025-10-01,Доход,ЗП,50000,\n"
+            "2025-10-02,Расход,Еда,1000,Продукты\n"
+        )
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        csv_file = SimpleUploadedFile("transactions.csv", csv_data.encode('utf-8'), content_type="text/csv")
+
+        count = import_transactions_from_csv(csv_file, self.user)
+        self.assertEqual(count, 2)
+
+        # Теперь должно быть ровно 2 транзакции
+        self.assertEqual(Transaction.objects.filter(user=self.user).count(), 2)
+        self.assertTrue(Transaction.objects.filter(category__name='ЗП', amount=Decimal('50000')).exists())
+        self.assertTrue(Transaction.objects.filter(category__name='Еда', amount=Decimal('1000')).exists())
 
 
 class ViewsTest(UserModelMixin, TestCase):
@@ -179,3 +199,22 @@ class ViewsTest(UserModelMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'text/csv')
         self.assertIn('attachment; filename="transactions.csv"', response['Content-Disposition'])
+    
+    def test_import_csv_view(self):
+        response = self.client.get(reverse('import_csv'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_transaction_delete(self):
+    # Создаём транзакцию
+    category = Category.objects.create(name='Тест', type=Category.EXPENSE, user=self.user)
+    transaction = Transaction.objects.create(
+        user=self.user,
+        category=category,
+        amount=Decimal('100.00'),
+        date=date.today()
+    )
+    
+    # Удаляем через POST
+    response = self.client.post(reverse('transaction_delete', kwargs={'pk': transaction.pk}))
+    self.assertEqual(response.status_code, 302)  # редирект
+    self.assertFalse(Transaction.objects.filter(pk=transaction.pk).exists())

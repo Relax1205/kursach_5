@@ -1,0 +1,12 @@
+<!-- core/templates/core/budget_list.html -->
+{% extends 'core/base.html' %}
+
+{% block content %}
+<h2>Бюджеты</h2>
+<div class="alert alert-info">
+    <strong>В разработке</strong><br>
+    Здесь будет управление ежемесячными бюджетами по категориям расходов.
+</div>
+
+<a href="{% url 'transaction_list' %}" class="btn btn-secondary">← Назад к транзакциям</a>
+{% endblock %}
