@@ -1,4 +1,5 @@
 # core/views.py
+from .services import get_monthly_summary, get_expense_breakdown_by_category, get_budget_vs_actual
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,6 +11,7 @@ from .models import Transaction, Category, Budget
 from .forms import TransactionForm, CategoryForm, BudgetForm
 from .services import export_transactions_to_csv
 from django.http import HttpResponse
+
 
 
 @login_required
@@ -164,9 +166,24 @@ def reports_view(request):
 
 
 @login_required
-def export_csv(request):
-    """Экспорт транзакций в CSV."""
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="transactions.csv"'
-    export_transactions_to_csv(response, request.user)
-    return response
+def reports_view(request):
+    """Отчёты: диаграммы и сводка за текущий месяц."""
+    today = date.today()
+    year, month = today.year, today.month
+
+    # Используем сервисы
+    summary = get_monthly_summary(request.user, year, month)
+    expense_data = get_expense_breakdown_by_category(request.user, year, month)
+    budget_comparison = get_budget_vs_actual(request.user, year, month)
+
+    # Подготовка для Chart.js
+    labels = [item['category__name'] for item in expense_data]
+    values = [float(item['total']) for item in expense_data]
+
+    return render(request, 'core/reports.html', {
+        'labels': labels,
+        'values': values,
+        'summary': summary,
+        'budget_comparison': budget_comparison,
+        'current_month': f"{today.strftime('%B')} {year}",
+    })
