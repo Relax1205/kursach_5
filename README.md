@@ -51,23 +51,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Настройка окружения
-
-Создайте файл `.env` в корневой директории проекта (`kursach_5/.env`) и добавьте в него следующие переменные:
-
-```env
-SECRET_KEY='your-secret-key'
-DEBUG=True
-```
-*Замените `your-secret-key` на уникальный секретный ключ Django.*
-
-### 5. Применение миграций базы данных
+### 4. Применение миграций базы данных
 
 ```bash
 python personal_finance/manage.py migrate
 ```
 
-### 6. Создание суперпользователя
+### 5. Создание суперпользователя
 
 Для доступа к административной панели и входа в систему создайте администратора:
 
@@ -76,7 +66,7 @@ python personal_finance/manage.py createsuperuser
 ```
 *Следуйте инструкциям в консоли, чтобы задать имя, email и пароль.*
 
-### 7. Запуск сервера разработки
+### 6. Запуск сервера разработки
 
 ```bash
 python personal_finance/manage.py runserver
