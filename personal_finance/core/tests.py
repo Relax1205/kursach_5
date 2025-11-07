@@ -205,16 +205,16 @@ class ViewsTest(UserModelMixin, TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_transaction_delete(self):
-    # Создаём транзакцию
-    category = Category.objects.create(name='Тест', type=Category.EXPENSE, user=self.user)
-    transaction = Transaction.objects.create(
-        user=self.user,
-        category=category,
-        amount=Decimal('100.00'),
-        date=date.today()
-    )
-    
-    # Удаляем через POST
-    response = self.client.post(reverse('transaction_delete', kwargs={'pk': transaction.pk}))
-    self.assertEqual(response.status_code, 302)  # редирект
-    self.assertFalse(Transaction.objects.filter(pk=transaction.pk).exists())
+        # Создаём транзакцию
+        category = Category.objects.create(name='Тест', type=Category.EXPENSE, user=self.user)
+        transaction = Transaction.objects.create(
+            user=self.user,
+            category=category,
+            amount=Decimal('100.00'),
+            date=date.today()
+        )
+        
+        # Удаляем через POST
+        response = self.client.post(reverse('transaction_delete', kwargs={'pk': transaction.pk}))
+        self.assertEqual(response.status_code, 302)  # редирект
+        self.assertFalse(Transaction.objects.filter(pk=transaction.pk).exists())
